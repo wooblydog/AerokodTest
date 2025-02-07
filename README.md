@@ -4,6 +4,7 @@
 
 Все команды выполняются в корневой директории:
 
+1. `cp .env.example .env`
 1. `docker-compose up --build -d`
 2. `docker compose exec -it php composer install`
 3. `docker compose exec -it php php artisan install:api`
