@@ -1,18 +1,22 @@
 FROM php:8.2-fpm-alpine
 
-ARG UID=1000
-ARG GID=1000
+ARG UID
+ARG GID
 
 ENV UID=${UID}
 ENV GID=${GID}
 
-RUN delgroup dialout || true
+RUN mkdir -p /var/www/html
+WORKDIR /var/www/html
 
-RUN addgroup -g ${GID} laravel
-RUN adduser -D -s /bin/sh -G laravel -u ${UID} laravel
+COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
+
+RUN addgroup -g ${GID} --system laravel
+RUN adduser -G laravel --system -D -s /bin/sh -u ${UID} laravel
 
 RUN sed -i "s/user = www-data/user = laravel/g" /usr/local/etc/php-fpm.d/www.conf
 RUN sed -i "s/group = www-data/group = laravel/g" /usr/local/etc/php-fpm.d/www.conf
+RUN echo "php_admin_flag[log_errors] = on" >> /usr/local/etc/php-fpm.d/www.conf
 
 RUN apk add --no-cache \
     libpq \
@@ -23,12 +27,6 @@ RUN apk add --no-cache \
 
 RUN docker-php-ext-install pdo pdo_pgsql
 
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+USER laravel
 
-COPY . .
-
-RUN composer install --no-dev --optimize-autoloader
-
-RUN chown -R laravel:laravel storage bootstrap/cache
-
-CMD ["php-fpm"]
+CMD ["php-fpm", "-y", "/usr/local/etc/php-fpm.conf", "-R"]
